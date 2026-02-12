@@ -3,6 +3,7 @@ import json
 import re
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 import scrython
 from flask import Flask, render_template, request
@@ -10,6 +11,12 @@ from pyrchidekt.api import getDeckById
 import requests
 
 app = Flask(__name__)
+
+SCRYFALL_DOCUMENTED_MAX_RPS = 10
+SCRYFALL_TARGET_RPS = SCRYFALL_DOCUMENTED_MAX_RPS / 2
+SCRYFALL_MIN_INTERVAL_SECONDS = 1.0 / SCRYFALL_TARGET_RPS
+_scryfall_rate_lock = Lock()
+_next_scryfall_request_time = 0.0
 
 
 IGNORED_SETS = {
@@ -217,6 +224,17 @@ class DeckAnalysis:
     error: str | None = None
 
 
+def throttle_scryfall() -> None:
+    global _next_scryfall_request_time
+    with _scryfall_rate_lock:
+        now = time.monotonic()
+        wait_seconds = _next_scryfall_request_time - now
+        if wait_seconds > 0:
+            time.sleep(wait_seconds)
+            now = time.monotonic()
+        _next_scryfall_request_time = max(now, _next_scryfall_request_time) + SCRYFALL_MIN_INTERVAL_SECONDS
+
+
 def _printing_as_dict(printing: object) -> dict:
     if isinstance(printing, dict):
         return printing
@@ -242,6 +260,7 @@ def find_rare_printings(deck_id: int) -> tuple[str, dict[str, list[RarePrinting]
             continue
         seen_names.add(card_name)
 
+        throttle_scryfall()
         query = scrython.cards.Search(unique="prints", q=card_name)
         rares: list[RarePrinting] = []
         results = query.data() if callable(query.data) else query.data
@@ -263,7 +282,6 @@ def find_rare_printings(deck_id: int) -> tuple[str, dict[str, list[RarePrinting]
             )
         if rares:
             rare_by_card[card_name] = rares
-        time.sleep(0.1)  # be polite to Scryfall
 
     return deck.name, dict(sorted(rare_by_card.items()))
 
