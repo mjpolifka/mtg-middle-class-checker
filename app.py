@@ -14,6 +14,7 @@ IGNORED_SETS = {
     "SLP",  # Secret Lair Showdown
     "SLC",  # Secret Lair 30th Anniversary Countdown Kit
     "SPG",  # Special Guests
+    "TLE",  # Through the Omenpaths
     "HOP",  # Planechase
     "PLST",  # The List
     # Promos and similar
