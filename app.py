@@ -204,6 +204,20 @@ class RarePrinting:
     rarity: str
 
 
+def _printing_as_dict(printing: object) -> dict:
+    if isinstance(printing, dict):
+        return printing
+    if hasattr(printing, "to_dict") and callable(printing.to_dict):
+        return printing.to_dict()
+    return {
+        "name": getattr(printing, "name", ""),
+        "set": getattr(printing, "set", ""),
+        "set_name": getattr(printing, "set_name", ""),
+        "collector_number": getattr(printing, "collector_number", ""),
+        "rarity": getattr(printing, "rarity", ""),
+    }
+
+
 def find_rare_printings(deck_id: int) -> tuple[str, dict[str, list[RarePrinting]]]:
     deck = getDeckById(deck_id)
     rare_by_card: dict[str, list[RarePrinting]] = {}
@@ -217,7 +231,9 @@ def find_rare_printings(deck_id: int) -> tuple[str, dict[str, list[RarePrinting]
 
         query = scrython.cards.Search(unique="prints", q=card_name)
         rares: list[RarePrinting] = []
-        for printing in query.data():
+        results = query.data() if callable(query.data) else query.data
+        for raw_printing in results:
+            printing = _printing_as_dict(raw_printing)
             if printing["name"] != card_name:
                 continue
             if printing["rarity"] in {"common", "uncommon"}:
