@@ -1,9 +1,13 @@
 import time
+import json
+import re
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import scrython
 from flask import Flask, render_template, request
 from pyrchidekt.api import getDeckById
+import requests
 
 app = Flask(__name__)
 
@@ -205,6 +209,14 @@ class RarePrinting:
     rarity: str
 
 
+@dataclass
+class DeckAnalysis:
+    deck_id: int
+    deck_name: str
+    rare_results: dict[str, list[RarePrinting]]
+    error: str | None = None
+
+
 def _printing_as_dict(printing: object) -> dict:
     if isinstance(printing, dict):
         return printing
@@ -256,30 +268,108 @@ def find_rare_printings(deck_id: int) -> tuple[str, dict[str, list[RarePrinting]
     return deck.name, dict(sorted(rare_by_card.items()))
 
 
+def get_folder_decks(folder_id: int) -> list[tuple[int, str]]:
+    response = requests.get(f"https://archidekt.com/folders/{folder_id}", timeout=20)
+    response.raise_for_status()
+    match = re.search(
+        r'<script id="__NEXT_DATA__" type="application/json">(?P<json>.*?)</script>',
+        response.text,
+        flags=re.DOTALL,
+    )
+    if not match:
+        raise RuntimeError("Unable to parse folder data from Archidekt page.")
+
+    payload = json.loads(match.group("json"))
+    decks = (
+        payload.get("props", {})
+        .get("pageProps", {})
+        .get("redux", {})
+        .get("folders", {})
+        .get("rootFolder", {})
+        .get("decks", [])
+    )
+    if not decks:
+        return []
+
+    return [(deck["id"], deck["name"]) for deck in decks if "id" in deck and "name" in deck]
+
+
+def analyze_folder(folder_id: int) -> tuple[str, list[DeckAnalysis]]:
+    decks = get_folder_decks(folder_id)
+    if not decks:
+        return f"Folder {folder_id}", []
+
+    results: list[DeckAnalysis] = []
+    workers = min(4, len(decks))
+
+    def run_deck(deck_id: int, fallback_name: str) -> DeckAnalysis:
+        try:
+            deck_name, rares = find_rare_printings(deck_id)
+            return DeckAnalysis(deck_id=deck_id, deck_name=deck_name, rare_results=rares)
+        except Exception as exc:
+            return DeckAnalysis(
+                deck_id=deck_id,
+                deck_name=fallback_name,
+                rare_results={},
+                error=str(exc),
+            )
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        future_map = {
+            executor.submit(run_deck, deck_id, deck_name): (deck_id, deck_name)
+            for deck_id, deck_name in decks
+        }
+        for future in as_completed(future_map):
+            results.append(future.result())
+
+    # Keep output deterministic by deck name.
+    results.sort(key=lambda deck_result: deck_result.deck_name.lower())
+    return f"Folder {folder_id}", results
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     deck_name = None
     deck_id = ""
+    folder_id = ""
+    mode = "deck"
     rare_results = None
+    folder_results = None
+    folder_title = None
     error = None
 
     if request.method == "POST":
-        deck_id = request.form.get("deck_id", "").strip()
-        if not deck_id.isdigit():
-            error = "Deck ID must be numeric."
+        mode = request.form.get("mode", "deck").strip()
+        if mode == "folder":
+            folder_id = request.form.get("folder_id", "").strip()
+            if not folder_id.isdigit():
+                error = "Folder ID must be numeric."
+            else:
+                try:
+                    folder_title, folder_results = analyze_folder(int(folder_id))
+                except Exception as exc:
+                    error = f"Unexpected error: {exc}"
         else:
-            try:
-                deck_name, rare_results = find_rare_printings(int(deck_id))
-            except RuntimeError:
-                error = f"No deck found for ID {deck_id}."
-            except Exception as exc:  # broad catch for network/api issues
-                error = f"Unexpected error: {exc}"
+            deck_id = request.form.get("deck_id", "").strip()
+            if not deck_id.isdigit():
+                error = "Deck ID must be numeric."
+            else:
+                try:
+                    deck_name, rare_results = find_rare_printings(int(deck_id))
+                except RuntimeError:
+                    error = f"No deck found for ID {deck_id}."
+                except Exception as exc:  # broad catch for network/api issues
+                    error = f"Unexpected error: {exc}"
 
     return render_template(
         "index.html",
+        mode=mode,
         deck_id=deck_id,
+        folder_id=folder_id,
         deck_name=deck_name,
         rare_results=rare_results,
+        folder_results=folder_results,
+        folder_title=folder_title,
         error=error,
     )
 

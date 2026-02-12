@@ -13,6 +13,8 @@ This project now includes a Flask web app version of the deck analyzer.
 
 ## Usage
 
-1. Enter an Archidekt deck ID.
-2. Submit.
-3. Review cards in the deck that have rare/mythic printings (excluding sets in the ignored list).
+1. Choose a search mode:
+   - `By Deck ID`
+   - `By Folder ID`
+2. Enter the relevant Archidekt ID and submit.
+3. Review cards with rare/mythic printings (excluding sets in the ignored list).

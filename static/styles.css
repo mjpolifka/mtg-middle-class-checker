@@ -85,6 +85,15 @@ input {
   font: inherit;
 }
 
+select {
+  flex: 1 1 240px;
+  border: 2px solid #c8b385;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font: inherit;
+  background: #fff;
+}
+
 button {
   border: 0;
   border-radius: 10px;
@@ -113,6 +122,20 @@ button {
 
 .card-block h3 {
   margin: 0 0 0.45rem;
+}
+
+.folder-card {
+  margin-top: 0.75rem;
+}
+
+.folder-card h4 {
+  margin: 0.25rem 0;
+}
+
+.muted {
+  color: #5c5c5c;
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 ul {

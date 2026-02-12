@@ -19,9 +19,25 @@
 
     <section class="panel">
       <form method="post" class="deck-form">
+        <label for="mode">Search Mode</label>
+        <div class="row">
+          <select id="mode" name="mode">
+            <option value="deck" {% if mode == "deck" %}selected{% endif %}>By Deck ID</option>
+            <option value="folder" {% if mode == "folder" %}selected{% endif %}>By Folder ID</option>
+          </select>
+        </div>
+
         <label for="deck_id">Archidekt Deck ID</label>
         <div class="row">
-          <input id="deck_id" name="deck_id" value="{{ deck_id }}" placeholder="e.g. 15983552" required>
+          <input id="deck_id" name="deck_id" value="{{ deck_id }}" placeholder="e.g. 15983552">
+        </div>
+
+        <label for="folder_id">Archidekt Folder ID</label>
+        <div class="row">
+          <input id="folder_id" name="folder_id" value="{{ folder_id }}" placeholder="e.g. 1209082">
+        </div>
+
+        <div class="row">
           <button type="submit">Analyze</button>
         </div>
       </form>
@@ -50,6 +66,41 @@
             {% endfor %}
           {% else %}
             <p class="empty">No rare/mythic printings found outside your ignored set list.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      {% if folder_results is not none %}
+        <section class="results">
+          <h2>{{ folder_title }}</h2>
+          {% if folder_results %}
+            {% for deck in folder_results %}
+              <article class="card-block">
+                <h3>{{ deck.deck_name }} <span class="muted">(Deck ID {{ deck.deck_id }})</span></h3>
+                {% if deck.error %}
+                  <p class="error">Deck error: {{ deck.error }}</p>
+                {% elif deck.rare_results %}
+                  {% for card_name, printings in deck.rare_results.items() %}
+                    <div class="folder-card">
+                      <h4>{{ card_name }}</h4>
+                      <ul>
+                        {% for printing in printings %}
+                          <li>
+                            <strong>{{ printing.set_name }}</strong>
+                            ({{ printing.set_code }}) [{{ printing.collector_number }}]
+                            <span class="rarity">{{ printing.rarity }}</span>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <p class="empty">No rare/mythic printings found for this deck.</p>
+                {% endif %}
+              </article>
+            {% endfor %}
+          {% else %}
+            <p class="empty">No visible decks found in this folder.</p>
           {% endif %}
         </section>
       {% endif %}
