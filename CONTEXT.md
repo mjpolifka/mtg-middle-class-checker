@@ -4,7 +4,6 @@
 - Flask web app is implemented and running locally.
 - Primary branch: `main`
 - Remote: `origin` -> `https://github.com/mjpolifka/mtg-middle-class-checker.git`
-- Active feature branch for current work: `feat/single-id-ui-dev-script-mountain-ignore`
 
 ## Implemented Features
 - Analyze a single Archidekt deck by deck ID.
@@ -44,8 +43,8 @@
 - `demo.py` was intentionally left unchanged per user request.
 - Default working port is `5001` to avoid conflict with local app on `4173`.
 - `main` branch merges require explicit user QA approval before proceeding.
-- At the start of each new session, run the base command `git` so prefix approvals can cover all follow-up git commands.
 - Branch policy: use one feature branch per feature. Do not combine multiple features in one branch.
+- At the start of each new session, run the base command `git` so prefix approvals can cover all follow-up git commands.
 
 ## Open Roadmap (Keep Reminding User Until Built)
 - Move Scryfall API workload to the client/user side (or equivalent architecture) so requests are not centralized on server rate limits.
