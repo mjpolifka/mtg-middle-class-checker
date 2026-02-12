@@ -14,7 +14,7 @@
     <section class="hero">
       <p class="eyebrow">Magic: The Gathering</p>
       <h1>Rare Printing Finder</h1>
-      <p class="subtitle">Paste an Archidekt deck ID and list cards with rare/mythic printings.</p>
+      <p class="subtitle">Choose deck or folder mode, then analyze one Archidekt ID.</p>
     </section>
 
     <section class="panel">
@@ -27,14 +27,9 @@
           </select>
         </div>
 
-        <label for="deck_id">Archidekt Deck ID</label>
+        <label for="archidekt_id">Archidekt ID</label>
         <div class="row">
-          <input id="deck_id" name="deck_id" value="{{ deck_id }}" placeholder="e.g. 15983552">
-        </div>
-
-        <label for="folder_id">Archidekt Folder ID</label>
-        <div class="row">
-          <input id="folder_id" name="folder_id" value="{{ folder_id }}" placeholder="e.g. 1209082">
+          <input id="archidekt_id" name="archidekt_id" value="{{ archidekt_id }}" placeholder="e.g. 15983552 or 1209082">
         </div>
 
         <div class="row">
