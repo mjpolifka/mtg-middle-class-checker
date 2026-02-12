@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MTG Rare Printing Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Archivo+Black&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Magic: The Gathering</p>
+      <h1>Rare Printing Finder</h1>
+      <p class="subtitle">Paste an Archidekt deck ID and list cards with rare/mythic printings.</p>
+    </section>
+
+    <section class="panel">
+      <form method="post" class="deck-form">
+        <label for="deck_id">Archidekt Deck ID</label>
+        <div class="row">
+          <input id="deck_id" name="deck_id" value="{{ deck_id }}" placeholder="e.g. 15983552" required>
+          <button type="submit">Analyze</button>
+        </div>
+      </form>
+
+      {% if error %}
+        <p class="error">{{ error }}</p>
+      {% endif %}
+
+      {% if rare_results is not none %}
+        <section class="results">
+          <h2>{{ deck_name }}</h2>
+          {% if rare_results %}
+            {% for card_name, printings in rare_results.items() %}
+              <article class="card-block">
+                <h3>{{ card_name }}</h3>
+                <ul>
+                  {% for printing in printings %}
+                    <li>
+                      <strong>{{ printing.set_name }}</strong>
+                      ({{ printing.set_code }}) [{{ printing.collector_number }}]
+                      <span class="rarity">{{ printing.rarity }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </article>
+            {% endfor %}
+          {% else %}
+            <p class="empty">No rare/mythic printings found outside your ignored set list.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
